@@ -110,6 +110,7 @@ class User < ActiveRecord::Base
   after_create :set_random_avatar
   after_create :ensure_in_trust_level_group
   after_create :set_default_categories_preferences
+  after_create :create_reviewable
 
   before_save :update_username_lower
   before_save :ensure_password_is_hashed
@@ -395,16 +396,8 @@ class User < ActiveRecord::Base
 
   # Approve this user
   def approve(approved_by, send_mail = true)
-    self.approved = true
 
-    if approved_by.is_a?(Integer)
-      self.approved_by_id = approved_by
-    else
-      self.approved_by = approved_by
-    end
-
-    self.approved_at = Time.zone.now
-
+    ReviewableUser.setup_approval(self, approved_by)
     if result = save
       send_approval_email if send_mail
       DiscourseEvent.trigger(:user_approved, self)
@@ -1203,6 +1196,11 @@ class User < ActiveRecord::Base
 
   def ensure_in_trust_level_group
     Group.user_trust_level_change!(id, trust_level)
+  end
+
+  def create_reviewable
+    return if !SiteSetting.must_approve_users? || approved?
+    ReviewableUser.create_for(self)
   end
 
   def create_user_stat

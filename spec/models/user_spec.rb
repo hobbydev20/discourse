@@ -128,6 +128,17 @@ describe User do
     let(:user) { Fabricate(:user) }
     let(:admin) { Fabricate(:admin) }
 
+    it "creates a reviewable for the user if must_approve_users is true" do
+      SiteSetting.must_approve_users = true
+      user
+      expect(Reviewable.find_by(target: user)).to be_present
+    end
+
+    it "doesn't create a reviewable if must_approve_users is false" do
+      user
+      expect(Reviewable.find_by(target: user)).to be_blank
+    end
+
     it "enqueues a 'signup after approval' email if must_approve_users is true" do
       SiteSetting.must_approve_users = true
       Jobs.expects(:enqueue).with(

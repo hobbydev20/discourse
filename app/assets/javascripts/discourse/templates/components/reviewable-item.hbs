@@ -1,0 +1,14 @@
+<div class='reviewable-item'>
+  {{component reviewableComponent reviewable=reviewable}}
+
+  <div class='reviewable-actions'>
+    {{#each reviewable.reviewable_actions as |a|}}
+      {{d-button
+        class="reviewable-action"
+        disabled=updating
+        icon=a.icon
+        action=(action "perform" a.id)
+        translatedLabel=a.title}}
+    {{/each}}
+  </div>
+</div>

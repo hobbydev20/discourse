@@ -395,6 +395,11 @@ class Guardian
     UserExport.where(user_id: @user.id, created_at: (Time.zone.now.beginning_of_day..Time.zone.now.end_of_day)).count == 0
   end
 
+  def can_review?(reviewable, action_id)
+    actions = reviewable.actions_for(self)
+    actions.has?(action_id)
+  end
+
   def allow_themes?(theme_ids, include_preview: false)
     return true if theme_ids.blank?
 

@@ -345,10 +345,7 @@ class UsersController < ApplicationController
     user = User.new(new_user_params) if user.nil?
 
     # Handle API approval
-    if user.approved
-      user.approved_by_id ||= current_user.id
-      user.approved_at ||= Time.zone.now
-    end
+    ReviewableUser.setup_approval(user, current_user) if user.approved?
 
     # Handle custom fields
     user_fields = UserField.all

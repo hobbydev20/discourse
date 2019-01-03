@@ -1,0 +1,12 @@
+.reviewable-item {
+  margin-bottom: 1em;
+
+  .reviewable-actions {
+    margin-top: 0.5em;
+    display: flex;
+
+    .reviewable-action {
+      margin-right: 0.5em;
+    }
+  }
+}
