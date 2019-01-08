@@ -396,14 +396,23 @@ class User < ActiveRecord::Base
 
   # Approve this user
   def approve(approved_by, send_mail = true)
+    Discourse.deprecate("User#approve is deprecated. Please use the Reviewable API instead.", output_in_test: true)
 
-    ReviewableUser.setup_approval(self, approved_by)
-    if result = save
-      send_approval_email if send_mail
-      DiscourseEvent.trigger(:user_approved, self)
+    # Backwards compatibility - in case plugins or something is using the old API which accepted
+    # either a Number or object. Probably should remove at some point
+    approved_by = User.find_by(id: approved_by) if approved_by.is_a?(Numeric)
+
+    if reviewable_user = ReviewableUser.find_by(target: self)
+      result = reviewable_user.perform(approved_by, :approve, send_email: send_mail)
+      if result.success?
+        self.approved_by = reviewable_user.target.approved_by
+        self.approved = true
+        self.approved_at = reviewable_user.target.approved_at
+        return true
+      end
     end
 
-    result
+    false
   end
 
   def self.email_hash(email)
@@ -1199,7 +1208,9 @@ class User < ActiveRecord::Base
   end
 
   def create_reviewable
-    return if !SiteSetting.must_approve_users? || approved?
+    return unless SiteSetting.must_approve_users? || SiteSetting.invite_only?
+    return if approved?
+
     ReviewableUser.create_for(self)
   end
 
@@ -1275,15 +1286,6 @@ class User < ActiveRecord::Base
       if will_save_change_to_username? && existing.present? && !same_user
         errors.add(:username, I18n.t(:'user.username.unique'))
       end
-    end
-  end
-
-  def send_approval_email
-    if SiteSetting.must_approve_users
-      Jobs.enqueue(:critical_user_email,
-        type: :signup_after_approval,
-        user_id: id
-      )
     end
   end
 

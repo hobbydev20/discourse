@@ -293,15 +293,12 @@ class Admin::UsersController < Admin::AdminController
   end
 
   def approve
-    guardian.ensure_can_approve!(@user)
-    @user.approve(current_user)
+    Reviewable.bulk_perform_targets(current_user, :approve, 'ReviewableUser', [@user.id])
     render body: nil
   end
 
   def approve_bulk
-    User.where(id: params[:users]).each do |u|
-      u.approve(current_user) if guardian.can_approve?(u)
-    end
+    Reviewable.bulk_perform_targets(current_user, :approve, 'ReviewableUser', params[:users])
     render body: nil
   end
 

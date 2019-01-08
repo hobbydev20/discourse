@@ -15,10 +15,10 @@ describe ReviewablesController do
   end
 
   context "when logged in" do
-    let(:moderator) { Fabricate(:moderator) }
+    let(:admin) { Fabricate(:admin) }
 
     before do
-      sign_in(moderator)
+      sign_in(admin)
     end
 
     context "#index" do
@@ -46,8 +46,9 @@ describe ReviewablesController do
       end
 
       it "will use the ReviewableUser serializer for its fields" do
+        SiteSetting.must_approve_users = true
         user = Fabricate(:user)
-        reviewable = Fabricate(:reviewable, target_id: user.id)
+        reviewable = Reviewable.find_by(target: user)
 
         get "/review.json"
         expect(response.code).to eq("200")
@@ -64,6 +65,9 @@ describe ReviewablesController do
 
     context "#perform" do
       let(:reviewable) { Fabricate(:reviewable) }
+      before do
+        sign_in(Fabricate(:moderator))
+      end
 
       it "returns 404 when the reviewable does not exist" do
         put "/review/12345/perform/approve.json"
